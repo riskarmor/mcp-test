@@ -1,0 +1,60 @@
+# MCP Hygiene Scoring Configuration
+# Manual overrides and customizations
+
+# Override scores for specific repositories
+# Values should be between 0 and 1
+overrides:
+  # Example: Boost score for a critical repository
+  # "modelcontextprotocol/servers":
+  #   branch_protection: 1.0  # Override to perfect score
+  #   community_files: 0.8    # Adjust community files score
+
+  # Example: Penalize known problematic repo
+  # "example-org/abandoned-repo":
+  #   commit_recency: 0.0
+  #   pr_activity: 0.0
+
+# Threshold customizations (uncomment to override defaults)
+# thresholds:
+#   healthy_pr_count_90d: 3      # Default: 2
+#   stale_pr_days: 45             # Default: 60
+#   stale_issue_days: 60          # Default: 90
+#   min_pr_description: 100       # Default: 50
+#   recent_commit_days: 14        # Default: 30
+#   recent_release_days: 60       # Default: 90
+#   min_contributors: 3           # Default: 2
+
+# Weight customizations (must total to 1.00)
+# weights:
+#   community_files: 0.15
+#   branch_protection: 0.10
+#   young_repo: 0.05
+#   pr_activity: 0.10
+#   commit_recency: 0.10
+#   pr_reviewed: 0.10
+#   pr_descriptive: 0.10
+#   repo_cleanliness: 0.10
+#   release_recency: 0.10
+#   contributors: 0.10
+
+# Repositories to exclude from scoring
+exclude:
+  # - "example-org/test-repo"
+  # - "example-org/archived-repo"
+
+# Cache settings (for future implementation)
+cache:
+  enabled: false
+  ttl_seconds: 3600  # 1 hour
+  directory: ".cache/hygiene"
+
+# API rate limiting settings
+rate_limit:
+  requests_per_hour: 5000
+  concurrent_requests: 10
+
+# Logging configuration
+logging:
+  level: INFO  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "hygiene_scoring.log"

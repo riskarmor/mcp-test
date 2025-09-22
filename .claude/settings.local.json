@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(tree:*)",
+      "Bash(python:*)",
+      "Read(//mnt/**)",
+      "Read(//home/**)",
+      "Bash(python3:*)",
+      "WebSearch"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

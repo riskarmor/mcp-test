@@ -1,0 +1,19 @@
+# MCP Hygiene Scoring System Dependencies
+
+# GraphQL client for GitHub API
+gql[aiohttp]>=3.4.0
+
+# Async HTTP client
+aiohttp>=3.8.0
+
+# Environment variable management
+python-dotenv>=1.0.0
+
+# YAML configuration support
+PyYAML>=6.0
+
+# Optional: For enhanced logging
+colorlog>=6.7.0
+
+# Optional: For caching
+diskcache>=5.6.0

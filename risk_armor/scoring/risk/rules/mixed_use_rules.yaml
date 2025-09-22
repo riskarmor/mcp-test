@@ -1,0 +1,37 @@
+rules:
+- id: mcp-py-conditional-auth-missing
+  message: MCP server supports public access but lacks mode-check-based authentication.
+  severity: ERROR
+  languages:
+  - python
+  patterns:
+  - pattern: "@app.route(...)\ndef $FUNC(...):\n    ..."
+  - pattern-not-inside: "if os.environ.get(\"MCP_MODE\") == \"standalone\":\n    if\
+      \ \"Authorization\" in request.headers:"
+  metadata:
+    category: security
+    role: mixed-use
+- id: mcp-js-conditional-auth-missing
+  message: Conditional (mode-based) authentication missing for mixed-use MCP.
+  severity: ERROR
+  languages:
+  - javascript
+  - typescript
+  patterns:
+  - pattern: app.$METHOD($ROUTE, $HANDLER)
+  - pattern-not-inside: if (process.env.MCP_MODE === "standalone" && req.headers.authorization)
+  metadata:
+    category: security
+    role: mixed-use
+- id: mcp-go-conditional-auth-missing
+  message: Conditional auth missing for standalone mode.
+  severity: ERROR
+  languages:
+  - go
+  patterns:
+  - pattern: "func $HANDLER(w http.ResponseWriter, r *http.Request) {\n    ...\n}"
+  - pattern-not-inside: if os.Getenv("MCP_MODE") == "standalone" && r.Header.Get("Authorization")
+      != ""
+  metadata:
+    category: security
+    role: mixed-use

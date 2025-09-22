@@ -1,0 +1,33 @@
+rules:
+- id: mcp-py-insecure-default-binding
+  message: "No role detected and app exposed to 0.0.0.0 \u2014 deny by policy."
+  severity: ERROR
+  languages:
+  - python
+  pattern: app.run(host="0.0.0.0")
+  metadata:
+    category: security
+    role: unknown
+- id: mcp-js-insecure-default-binding
+  message: "No role detected and app exposed to 0.0.0.0 \u2014 blocked by policy."
+  severity: ERROR
+  languages:
+  - javascript
+  - typescript
+  pattern-either:
+  - pattern: app.listen($PORT, "0.0.0.0")
+  - pattern: server.listen($PORT, "0.0.0.0")
+  metadata:
+    category: security
+    role: unknown
+- id: mcp-go-insecure-default-binding
+  message: No role detected and server binds to public interface.
+  severity: ERROR
+  languages:
+  - go
+  pattern-either:
+  - pattern: http.ListenAndServe("0.0.0.0:$PORT", ...)
+  - pattern: net.Listen("tcp", "0.0.0.0:$PORT")
+  metadata:
+    category: security
+    role: unknown
