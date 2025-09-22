@@ -1,0 +1,45 @@
+rules:
+- id: mcp-py-host-exposed-binding
+  message: Plugin binds to public interface despite being trusted-host-only.
+  severity: ERROR
+  languages:
+  - python
+  pattern-either:
+  - pattern: app.run(host="0.0.0.0")
+  - pattern: server.bind(("0.0.0.0", $PORT))
+  - pattern: HTTPServer(('', $PORT), $HANDLER)
+  metadata:
+    category: security
+    role: trusted-host-only
+- id: mcp-py-missing-prompt-logging
+  message: Prompt or tool invocation not logged for internal audit.
+  severity: WARNING
+  languages:
+  - python
+  pattern-not-inside: logging.info("Prompt" ...)
+  metadata:
+    category: audit
+    role: trusted-host-only
+- id: mcp-js-host-exposed-binding
+  message: Plugin binds to public interface (0.0.0.0) despite being trusted-host-only.
+  severity: ERROR
+  languages:
+  - javascript
+  - typescript
+  pattern-either:
+  - pattern: app.listen($PORT, "0.0.0.0")
+  - pattern: server.listen($PORT, "0.0.0.0")
+  metadata:
+    category: security
+    role: trusted-host-only
+- id: mcp-go-host-exposed-binding
+  message: Trusted-host-only MCP must NOT bind to 0.0.0.0.
+  severity: ERROR
+  languages:
+  - go
+  pattern-either:
+  - pattern: net.Listen("tcp", "0.0.0.0:$PORT")
+  - pattern: http.ListenAndServe("0.0.0.0:$PORT", ...)
+  metadata:
+    category: security
+    role: trusted-host-only

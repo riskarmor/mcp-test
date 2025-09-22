@@ -25,10 +25,8 @@ from typing import Optional, Dict, Any, List
 import logging
 
 # Import security modules
-import sys
-sys.path.append(str(Path(__file__).parent.parent))
-from security.validators import validate_github_url, validate_file_path
-from security.storage import SecureStorage
+from ..security.validators import validate_github_url, validate_file_path
+from ..security.storage import SecureStorage
 
 logger = logging.getLogger(__name__)
 

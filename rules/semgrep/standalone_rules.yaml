@@ -1,0 +1,85 @@
+rules:
+- id: mcp-py-missing-auth
+  message: Publicly exposed route lacks authentication or RBAC enforcement.
+  severity: ERROR
+  languages:
+  - python
+  patterns:
+  - pattern: "@app.route(...)\ndef $FUNC(...):\n    ..."
+  - pattern-not-inside: if "Authorization" in request.headers
+  - pattern-not-inside: '@require_auth'
+  metadata:
+    category: security
+    role: standalone
+- id: mcp-py-transport-insecure
+  message: TLS disabled or not enforced for standalone MCP.
+  severity: ERROR
+  languages:
+  - python
+  pattern-either:
+  - pattern: requests.get(..., verify=False)
+  - pattern: app.run(ssl_context=None)
+  - pattern: client.connect(ssl=False)
+  metadata:
+    category: security
+    role: standalone
+- id: mcp-py-shell-injection
+  message: Unvalidated user input used in a shell/system command.
+  severity: ERROR
+  languages:
+  - python
+  pattern-either:
+  - pattern: subprocess.call($USER_INPUT, shell=True)
+  - pattern: os.system($USER_INPUT)
+  metadata:
+    category: injection
+    role: standalone
+- id: mcp-js-missing-auth
+  message: Public route lacks authentication (missing RBAC/enforcement).
+  severity: ERROR
+  languages:
+  - javascript
+  - typescript
+  patterns:
+  - pattern: app.$METHOD($ROUTE, $HANDLER)
+  - pattern-not-inside: if (req.headers.authorization)
+  - pattern-not-inside: authenticate(...)
+  - pattern-not-inside: authorize(...)
+  metadata:
+    category: security
+    role: standalone
+- id: mcp-js-shell-injection
+  message: Untrusted input passed to exec/spawn/shell.
+  severity: ERROR
+  languages:
+  - javascript
+  - typescript
+  pattern-either:
+  - pattern: child_process.exec($USER_INPUT)
+  - pattern: child_process.execSync($USER_INPUT)
+  - pattern: require('child_process').spawn($USER_INPUT)
+  metadata:
+    category: injection
+    role: standalone
+- id: mcp-go-missing-auth
+  message: Exposed HTTP handler lacks authentication/RBAC.
+  severity: ERROR
+  languages:
+  - go
+  patterns:
+  - pattern: "func $HANDLER(w http.ResponseWriter, r *http.Request) {\n    ...\n}"
+  - pattern-not-inside: if r.Header.Get("Authorization") != ""
+  metadata:
+    category: security
+    role: standalone
+- id: mcp-go-shell-injection
+  message: Untrusted input is passed to shell/exec.Command.
+  severity: ERROR
+  languages:
+  - go
+  pattern-either:
+  - pattern: exec.Command($USER_INPUT)
+  - pattern: exec.CommandContext($CTX, $USER_INPUT)
+  metadata:
+    category: injection
+    role: standalone
