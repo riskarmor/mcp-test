@@ -8,7 +8,12 @@
       "Read(//home/**)",
       "Bash(python3:*)",
       "WebSearch",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(PGPASSWORD='r$quaZ' psql:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(awk:*)",
+      "Bash(pip3 install:*)"
     ],
     "deny": [],
     "ask": []

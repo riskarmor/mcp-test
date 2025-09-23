@@ -1,15 +1,15 @@
-# MCP Security Analysis System
+# MCP Risk Assessment Tool
 
-A comprehensive security analysis system for scoring 13,016+ public GitHub repositories using multiple security tools and FICO-style scoring.
+A comprehensive security scoring and detection system for Model Context Protocol (MCP) repositories. The system analyzes public GitHub repositories containing MCPs, generates FICO-style security scores (300-850), and creates network detection rules to identify MCPs on enterprise networks.
 
 ## Overview
 
-The MCP Security Analysis System provides automated security assessment of public GitHub repositories through:
-
-- **Multi-tool scanning**: Semgrep, TruffleHog, OSV Scanner
-- **SBOM generation**: Comprehensive dependency analysis
-- **FICO-style scoring**: 300-850 range based on three pillars
-- **Time-decay penalties**: Incentivizes quick vulnerability patching
+The MCP Risk Assessment Tool provides:
+- **Three-component security scoring** with FICO-style output (300-850)
+- **Automated security scanning** using industry-standard tools (Semgrep, TruffleHog, OSV)
+- **Time-decay vulnerability scoring** that penalizes older vulnerabilities
+- **Multi-tenant architecture** with custom scoring policies
+- **Detection rule generation** in multiple formats (Snort, YARA, Sigma, etc.)
 - **Defense-in-depth security**: Safe processing of untrusted repositories
 
 ## Project Structure
@@ -23,10 +23,10 @@ mcp/
 │   ├── osv_scanner.py
 │   └── sbom_generator.py
 ├── scoring/               # Scoring modules
-│   ├── hygiene_scorer.py
-│   ├── risk_scorer.py
-│   ├── vulnerability_scorer.py
-│   └── aggregator.py
+│   ├── hygiene_scorer.py      # GitHub health metrics (25% weight)
+│   ├── tools_scorer.py        # Semgrep + TruffleHog (35% weight)
+│   ├── vulnerability_scorer.py # Time-decay scoring (40% weight)
+│   └── aggregator.py          # Final score calculation
 ├── security/              # Security controls
 │   ├── validators.py
 │   ├── database.py

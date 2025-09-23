@@ -18,13 +18,18 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Import security modules
-from security.config import SecurityConfig, SecurityLevel
+from security.config import SecurityConfig, SecurityLevel, get_security_config
 from security.validators import validate_github_url
 from github.fetcher import SecureGitHubFetcher
 
@@ -36,7 +41,7 @@ from scanners.osv_scanner import OSVScanner
 
 # Import scoring modules
 from scoring.hygiene_scorer import MCPHygieneScorer
-from scoring.risk_scorer import MCPRiskScorer
+from scoring.tools_scorer import MCPToolsScorer
 from scoring.vulnerability_scorer import VulnerabilityTimeScorer
 from scoring.aggregator import ScoreAggregator
 
@@ -66,15 +71,19 @@ class MCPSecurityOrchestrator:
             config_path: Path to configuration file
         """
         # Load security configuration
-        self.config = SecurityConfig(
-            security_level=SecurityLevel.HIGH,
-            config_path=config_path
-        )
+        if config_path:
+            self.config = SecurityConfig.from_file(config_path)
+        else:
+            self.config = get_security_config()
+
+        # Get settings from environment
+        self.github_token = os.getenv('GITHUB_TOKEN')
+        self.storage_path = os.getenv('MCP_STORAGE_PATH', '/opt/mcp/storage')
 
         # Initialize components
         self.github_fetcher = SecureGitHubFetcher(
-            github_token=self.config.github_token,
-            storage_path=self.config.storage_path
+            github_token=self.github_token,
+            storage_path=self.storage_path
         )
 
         # Initialize scanners
@@ -100,7 +109,7 @@ class MCPSecurityOrchestrator:
 
         # Initialize scorers
         self.hygiene_scorer = MCPHygieneScorer()
-        self.risk_scorer = MCPRiskScorer()
+        self.tools_scorer = MCPToolsScorer()
         self.vulnerability_scorer = VulnerabilityTimeScorer()
         self.score_aggregator = ScoreAggregator()
 
@@ -238,7 +247,10 @@ class MCPSecurityOrchestrator:
 
     async def _run_osv_scan(self, sbom_path: str) -> Dict[str, Any]:
         """Run OSV vulnerability scan."""
-        return self.osv_scanner.scan_from_sbom(sbom_path)
+        # OSV scanner has scan_sbom method, not scan_from_sbom
+        result = await self.osv_scanner.scan_sbom(sbom_path)
+        # Convert OSVScanResult to dict for compatibility
+        return result.to_dict()
 
     async def _empty_osv_result(self) -> Dict[str, Any]:
         """Return empty OSV result when SBOM unavailable."""
@@ -246,31 +258,75 @@ class MCPSecurityOrchestrator:
 
     def _calculate_scores(self, semgrep_result: Dict, trufflehog_result: Dict,
                          osv_result: Dict, repo_url: str) -> Dict[str, Any]:
-        """Calculate all security scores."""
+        """
+        Calculate all security scores using the three-component system.
+
+        This method orchestrates the scoring process by:
+        1. Calculating hygiene score from GitHub repository metrics
+        2. Calculating tools score from Semgrep and TruffleHog findings
+        3. Calculating vulnerability score from OSV scan results
+        4. Aggregating all three scores into a final FICO score
+
+        The final score uses weighted averaging:
+        - Hygiene: 25% (repository health)
+        - Tools: 35% (code issues and secrets)
+        - Vulnerability: 40% (known CVEs with time decay)
+
+        Args:
+            semgrep_result: Semgrep scan results with findings
+            trufflehog_result: TruffleHog scan results with findings
+            osv_result: OSV scan results with vulnerabilities
+            repo_url: GitHub repository URL
+
+        Returns:
+            Dictionary containing:
+                - final_score: Aggregated FICO score (300-850)
+                - hygiene_score: GitHub health metrics score
+                - tools_score: Combined Semgrep + TruffleHog score
+                - vulnerability_score: Time-decay vulnerability score
+                - components: Weight distribution
+        """
+        # Parse repo URL to get owner and name for hygiene scorer
+        from urllib.parse import urlparse
+        parsed = urlparse(repo_url)
+        path_parts = parsed.path.strip('/').split('/')
+        owner = path_parts[0] if len(path_parts) > 0 else 'unknown'
+        repo = path_parts[1] if len(path_parts) > 1 else 'unknown'
+
         # Calculate individual scores
-        hygiene_score = self.hygiene_scorer.calculate_score(trufflehog_result)
-        risk_score = self.risk_scorer.calculate_score(semgrep_result)
-        vulnerability_score = self.vulnerability_scorer.calculate_score(
-            osv_result.get('vulnerabilities', []),
+        # Hygiene scorer needs repo owner/name, not scan results
+        hygiene_score = asyncio.run(self.hygiene_scorer.score_repository(owner, repo))
+
+        # Tools scorer combines Semgrep and TruffleHog findings
+        tools_score_result = self.tools_scorer.calculate_score(
+            semgrep_result.get('findings', []),
+            trufflehog_result.get('findings', [])
+        )
+        tools_score = tools_score_result['fico_score']
+
+        # Vulnerability scorer processes OSV results
+        vulnerability_score_result = self.vulnerability_scorer.calculate_score(
+            osv_result,  # Pass the full result dict, not just vulnerabilities
             repo_url
         )
+        vulnerability_score = vulnerability_score_result.fico_score
 
-        # Aggregate scores
+        # Aggregate scores using FICO values
         final_score = self.score_aggregator.aggregate_scores({
-            'hygiene': hygiene_score,
-            'risk': risk_score,
+            'hygiene': hygiene_score.get('fico_score', 600),
+            'tools': tools_score,
             'vulnerability': vulnerability_score
         })
 
         return {
             'final_score': final_score,
             'hygiene_score': hygiene_score,
-            'risk_score': risk_score,
-            'vulnerability_score': vulnerability_score,
+            'tools_score': tools_score_result,
+            'vulnerability_score': vulnerability_score_result.to_dict(),
             'components': {
-                'hygiene_weight': 0.30,
-                'risk_weight': 0.40,
-                'vulnerability_weight': 0.30
+                'hygiene_weight': 0.25,
+                'tools_weight': 0.35,
+                'vulnerability_weight': 0.40
             }
         }
 

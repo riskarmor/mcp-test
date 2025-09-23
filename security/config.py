@@ -17,6 +17,10 @@ from typing import Dict, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
 import logging
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -132,21 +136,39 @@ class SecurityConfig:
         config.security_level = SecurityLevel(level)
 
         # Authentication
-        config.require_authentication = os.getenv('MCP_REQUIRE_AUTH', 'true').lower() == 'true'
-        config.session_timeout_minutes = int(os.getenv('MCP_SESSION_TIMEOUT', '30'))
+        config.require_authentication = os.getenv('AUTH_ENABLED', 'true').lower() == 'true'
+        config.session_timeout_minutes = int(os.getenv('AUTH_SESSION_TIMEOUT', '1800')) // 60
+        config.max_failed_logins = int(os.getenv('AUTH_MAX_LOGIN_ATTEMPTS', '5'))
+        config.lockout_duration_minutes = int(os.getenv('AUTH_LOCKOUT_DURATION', '300')) // 60
 
         # Database
         config.encrypt_database = os.getenv('MCP_ENCRYPT_DB', 'true').lower() == 'true'
-        config.database_encryption_key = os.getenv('MCP_DB_ENCRYPTION_KEY')
+        config.database_encryption_key = os.getenv('MCP_ENCRYPTION_KEY')
+        if config.database_encryption_key == 'auto_generate':
+            config.database_encryption_key = config._generate_encryption_key()
 
         # Storage
         config.encrypt_storage = os.getenv('MCP_ENCRYPT_STORAGE', 'true').lower() == 'true'
+        config.quarantine_enabled = os.getenv('MCP_ENABLE_MALWARE_SCAN', 'true').lower() == 'true'
 
         # Rate limiting
-        config.rate_limit_requests_per_hour = int(os.getenv('MCP_RATE_LIMIT', '1000'))
+        config.enable_rate_limiting = os.getenv('RATE_LIMIT_ENABLED', 'true').lower() == 'true'
+        config.rate_limit_requests_per_hour = int(os.getenv('RATE_LIMIT_PER_HOUR', '1000'))
+        config.github_api_rate_limit = int(os.getenv('GITHUB_RATE_LIMIT', '4500'))
 
         # Monitoring
         config.enable_audit_logging = os.getenv('MCP_AUDIT_LOG', 'true').lower() == 'true'
+        config.enable_security_monitoring = os.getenv('MCP_SECURITY_MONITORING', 'true').lower() == 'true'
+
+        # Subprocess
+        config.subprocess_timeout_seconds = int(os.getenv('SEMGREP_TIMEOUT', '300'))
+        config.max_subprocess_memory_mb = int(os.getenv('SEMGREP_MAX_MEMORY', '2000'))
+
+        # Malware scanning
+        config.enable_malware_scanning = os.getenv('MCP_ENABLE_MALWARE_SCAN', 'true').lower() == 'true'
+
+        # Data retention
+        config.scan_result_retention_days = int(os.getenv('MCP_CLEANUP_AGE_DAYS', '90'))
 
         return config
 

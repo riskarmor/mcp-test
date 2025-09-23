@@ -346,11 +346,11 @@ Report Generator
 ```
 Repository: example-mcp-server
 ═══════════════════════════════════════
-Hygiene Score:      720 (B)  [30% weight]
-Risk Score:         680 (B)  [40% weight]
-Vulnerability:      750 (B+) [30% weight]
+Hygiene Score:      720 (B)  [25% weight]
+Tools Score:        680 (B)  [35% weight]
+Vulnerability:      750 (B+) [40% weight]
 ───────────────────────────────────────
-FINAL SCORE:        708 (B - Good)
+FINAL SCORE:        712 (B - Good)
 ═══════════════════════════════════════
 ```
 
